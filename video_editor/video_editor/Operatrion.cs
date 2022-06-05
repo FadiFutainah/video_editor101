@@ -2,4 +2,5 @@
 {
     Cut,
     Delete,
+    Move,
 }

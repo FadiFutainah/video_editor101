@@ -22,49 +22,46 @@ namespace video_editor
         public List<Bitmap> frames { get; set; }
         public Operatrion operatrion { get; set; }
         private string systemPath = @"D:\JEDB projects\Video editor (multimedia 2.0)\snapshot 3.0\";
-        
+
         public VideoEditor()
         {
-            frames = new List<Bitmap>();    
-            currentFrame = 0; 
+            frames = new List<Bitmap>();
+            currentFrame = 0;
         }
 
         public void Cut(int start, int end)
         {
-            List<Bitmap> newFrames = new List<Bitmap>();
-            for (int i = start; i <= end; ++i)
-            {
-                newFrames.Add(frames[i]);
-            }
-            frames = newFrames;
+            frames.RemoveRange(0, start - 1);
+            frames.RemoveRange(end, frames.Count - end - 1);
         }
 
         public void Delete(int start, int end)
         {
-            List<Bitmap> newFrames = new List<Bitmap>();
-            for (int i = 0; i < start; ++i)
-            {
-                newFrames.Add(frames[i]);
-            }
-            for (int i = end; i < frames.Count; ++i)
-            {
-                newFrames.Add(frames[i]);
-            }
-            frames = newFrames;
+            frames.RemoveRange(start, end - start);
         }
 
         public void GetFrames(string filePath, int stepSize)
         {
-            var videoFrameReader = new VideoFrameReader(filePath);
-
-            while (videoFrameReader.GetEnumerator().MoveNext())
+            var videoFrameReader = new VideoFileReader();
+            videoFrameReader.Open(filePath);
+            
+            for(int i = 0; i < videoFrameReader.FrameCount; i += stepSize)
             {
-                frames.Add(videoFrameReader.GetFrame());
-                for (int i = 0; i < stepSize; ++i)
-                {
-                    videoFrameReader.GetEnumerator().MoveNext();
-                }
+                if (i >= videoFrameReader.FrameCount) break;
+                frames.Add(videoFrameReader.ReadVideoFrame(i)); 
             }
+
+            videoFrameReader.Close();
+            //var videoFrameReader = new VideoFrameReader(filePath);
+
+            //while (videoFrameReader.GetEnumerator().MoveNext())
+            //{
+            //    frames.Add(videoFrameReader.GetFrame());
+            //    for (int i = 0; i < stepSize; ++i)
+            //    {
+            //        videoFrameReader.GetEnumerator().MoveNext();
+            //    }
+            //}
         }
 
         public void SaveFrames(string filePath, int stepSize)
@@ -84,43 +81,32 @@ namespace video_editor
             }
         }
 
-        public void CreateVideo(string name, int height = -1, int width = -1, int frameRate = 30)
+        public void SaveVideo(string name, int height = -1, int width = -1, int frameRate = 30)
         {
-            if(width == -1) width = frames[0].Width;
-            if(height == -1) height = frames[0].Height;
+            if (width == -1 || width > frames[0].Width) width = frames[0].Width;
+            if (height == -1 || height > frames[0].Height) height = frames[0].Height;
 
             VideoFileWriter writer = new VideoFileWriter();
             writer.Open(name + ".avi", width, height, frameRate, VideoCodec.MPEG4, 1000000);
-            for(int i = 0; i < frames.Count; ++i)
+            for (int i = 0; i < frames.Count; ++i)
             {
-                writer.WriteVideoFrame(frames[i]);
+                writer.WriteVideoFrame(new Bitmap(frames[i], new Size(width, height)));
             }
             writer.Close();
 
             File.Move(systemPath + @"video_editor\video_editor\bin\Debug\" + name + ".avi", systemPath + @"output\" + name + ".avi");
-        } 
-    
+        }
+
+        public void MoveSection(int start, int end, int distination)
+        {
+            int range = end - start;
+            List<Bitmap> newFrames = frames.GetRange(start, range);
+            frames.RemoveRange(start, range);
+            frames.InsertRange(distination - range, newFrames);
+        }
+
         public void AddWatermark()
         {
-            using (Watermarker watermarker = new Watermarker(frames[0]))
-            {
-                // Set the Text and Watermark Font
-                Font font = new Font("Arial", 30, FontStyle.Bold | FontStyle.Italic);
-                TextWatermark watermark = new TextWatermark("GroupDocs", font);
-
-                // Set Watermark Properties
-                watermark.ForegroundColor = Color.Black;
-                watermark.TextAlignment = TextAlignment.Right;
-                watermark.X = 70;
-                watermark.Y = 70;
-                watermark.RotateAngle = -30;
-                watermark.Opacity = 0.4;
-                // watermark.BackgroundColor = Color.Blue;
-
-                // Add the configured watermark to JPG Image
-                watermarker.Add(watermark);
-                watermarker.Save("filePath/outputImage.jpg");
-            }
 
         }
     }

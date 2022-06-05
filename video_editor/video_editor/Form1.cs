@@ -49,7 +49,7 @@ namespace video_editor
             if (openFileDialog1.ShowDialog() == DialogResult.OK)
             {
                 Debug.Write(openFileDialog1.FileName);
-                editor.GetFrames(openFileDialog1.FileName, 0);
+                editor.GetFrames(openFileDialog1.FileName, 1);
                 InitFrameSlider();
             }
         }
@@ -102,23 +102,57 @@ namespace video_editor
 
         private void endButton_Click(object sender, EventArgs e)
         {
-            endButton.Visible = false;
             endTime = trackBar1.Value;
-            if(editor.operatrion == Operatrion.Cut)
+            if (editor.operatrion == Operatrion.Cut)
             {
-                editor.Cut(startTime, endTime); 
+                editor.Cut(startTime, endTime);
+                trackBar1.Value = 0;
+                InitFrameSlider();
             }
             else if(editor.operatrion == Operatrion.Delete)
             {
                 editor.Delete(startTime, endTime);
+                trackBar1.Value = 0;
+                InitFrameSlider();
             }
-            trackBar1.Value = 0;
-            InitFrameSlider();
+            else if(editor.operatrion == Operatrion.Move)
+            {
+                moveToButton.Visible = true;
+            }
+            endButton.Enabled = false;
         }
 
         private void saveButton_Click_1(object sender, EventArgs e)
         {
-            editor.CreateVideo("new");
+            groupBox1.Visible = true;
+        }
+
+        private void moveButton_Click(object sender, EventArgs e)
+        {
+            startButton.Enabled = true;
+            editor.operatrion = Operatrion.Move;
+        }
+
+        private void moveToButton_Click(object sender, EventArgs e)
+        {
+            editor.MoveSection(startTime, endTime, trackBar1.Value);
+            moveToButton.Visible = false;
+            trackBar1.Value = 0;
+            InitFrameSlider();
+        }
+
+        private void confirmButton_Click(object sender, EventArgs e)
+        {
+            int frameRate = Int32.Parse(frameRateInput.Text);
+            int width = Int32.Parse(widthInput.Text);
+            int height = Int32.Parse(heightInput.Text);
+            editor.SaveVideo("new", height, width, frameRate);
+            groupBox1.Visible = false;
+        }
+
+        private void cancelButton_Click(object sender, EventArgs e)
+        {
+            groupBox1.Visible = false;
         }
     }
 }
